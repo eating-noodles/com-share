@@ -55,9 +55,8 @@ The last comment block of each slide will be treated as slide notes. It will be 
   - 命令式和声明式
   - 运行时和编译时
 - 👏 **VueJs**
-  - 渲染器
-  - 组件
-  - 编译器
+  - 渲染器的作用
+  - 编译器的作用
 - 🤹 **实现响应式**
   - 基本思路
   - 边界问题
@@ -305,7 +304,7 @@ const obj = {
 
 <p v-click="3">
 
-- 根据`html`片段, 我们抽象出树状的数据结构
+- 根据`html`片段, 我们抽象出树状的数据结构。
 - 反过来想，那如果给我们树状结构的对象，我们是不是可以实现一个`Render`函数去生成`html`片段?
 
 </p>
@@ -403,3 +402,220 @@ Render(obj, document.body);
 至此, 我们实现了一个**运行时** + **编译时**的框架; 
 而且我们的`Render`函数和`Compiler`可以分别使用，也可以一起使用。我们可以在用户运行代码时，**运行时编译**;也可以构建时就先进行编译，运行的时候就无须编译了，这对性能提升来说是非常有效的。
 </p>
+
+---
+
+#  编译时
+
+<div>
+
+<p v-click="1">有没有人有疑问？</p>
+<p v-click="2">刚才我们做的事情，不就是把`html`转成了树状对象；然后又把树状对象转成了`html`吗？</p>
+<p v-click="2">这不是在套娃吗？</p>
+
+</div>
+
+--- 
+
+# VueJs
+
+给大家看一个简单的VueJs文件：
+
+``` javascript
+<template>
+  <div>
+    hello world
+  </div>
+</template>
+
+<script>
+export default {
+  data () {/*... */},
+  methods: {
+    /*... */
+  },
+}
+</script>
+<style></style>
+```
+<p v-click="1">
+一个vue文件，开发中一般就是一个组件(页面)，内容上分为三部分。
+</p>
+
+<p v-click="2">浏览器是不认识vue文件的，最后都要转成`html`,`js`,`css`的</p>
+<p v-click="3">就是靠的渲染器和编译器</p>
+
+---
+
+# 虚拟DOM和渲染函数
+
+<div grid="~ cols-2 gap-4">
+<div v-click="1">
+
+<p>
+前面总结出来的树状结构的数据对象:
+</p>
+
+``` javascript
+const obj = {
+  tag: 'div',
+  children: [
+    {
+      tag: 'span',
+      children: 'hello world'
+    }
+  ]
+}
+
+
+
+
+```
+<p v-click="2">
+我们用js对象来描述了UI，而这种js对象描述UI的方式就是所谓的`虚拟DOM`
+</p>
+</div>
+<div v-click="3">
+<p>
+vue中组件还有一种写法，就是使用渲染函数`h`
+</p>
+
+``` javascript
+import { h } from 'vue'
+
+export default {
+  data() {
+    return {
+      msg: 'hello world'
+    }
+  },
+  render() {
+    return h('div', this.msg)
+  }
+}
+```
+
+<p v-click="4">这种方式就是使用`虚拟DOM`来描述UI。其中的`h`函数是用来辅助创建`虚拟DOM`的工具函数。</p>
+
+<p v-click="5">
+组件的渲染函数：用来描述UI的函数，返回值是`虚拟DOM`。
+</p>
+</div>
+</div>
+---
+
+# 渲染器
+
+<div>
+前面实现的渲染方法:
+</div>
+
+``` javascript
+function Render(obj, root) {
+  const el = document.createElement(obj.tag);
+  if (typeof obj.children === 'string') {
+    const text = document.createTextNode(obj.children);
+    el.appendChild(text);
+  } else if (obj.children) {
+    obj.children.forEach(child => {
+      Render(child, el);
+    });
+  }
+  root.appendChild(el);
+}
+
+```
+<p v-click="1">
+
+这个方法接收`虚拟DOM`,生成`真实DOM`并挂载。这就是**渲染器**的作用。
+</p>
+<p v-click="2">
+如果按照我们上面的定义，它其实不应该叫渲染函数。它是一个功能不算完善的渲染器。
+</p>
+
+<p v-click="3">
+这里的渲染器只是在创建节点，其实渲染器还有一个更为关键的作用，那就是更新节点，当vnode(虚拟DOM对象)发生改变时，它需要精确的找到vnode的变更点并且只更新变更的内容。
+</p>
+
+---
+
+# 渲染器的简单实现
+
+``` javascript
+function renderer(vnode, container) {
+  const el = document.createElement(vnode.tag);
+  for(const key in vnode.props) {
+    if(/^on/.test(key)){
+      el.addEventListener(
+        key.substr(2).toLowerCase(),
+        vnode.props[key]
+      )
+    }
+  }
+
+  if(typeof vnode.children === 'string') {
+    const text = document.createTextNode(vnode.children);
+    el.appendChild(text);
+  } else if(Array.isArray(vnode.children)) {
+    vnode.children.forEach(child => {
+      renderer(child, el);
+    });
+  }
+
+  container.appendChild(el);
+}
+```
+
+---
+
+# 对比两种vue文件的写法
+
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+<p>模板写法</p>
+
+``` javascript
+<template>
+  <div>
+    hello world
+  </div>
+</template>
+
+<script>
+export default {
+  data () {/*... */},
+  methods: {/*... */},
+}
+</script>
+```
+</div>
+
+<div>
+
+<p>渲染函数写法</p>
+
+``` javascript
+import { h } from 'vue'
+
+export default {
+  data() {
+    return {
+      /*... */
+    }
+  },
+  render() {
+    return h('div', 'hello world')
+  }
+}
+
+```
+</div>
+</div>
+
+<p v-click="1">相比模板写法，渲染函数写法少了第一部分的模板标签(类似于html的标签)，同时，渲染函数多了`render`函数。</p>
+
+<p v-click="2">
+
+在vue中，最后都是需要`渲染器`来渲染UI，而渲染函数是来为`渲染器`生成`虚拟DOM`的。"左边写法"中的模板最后也要转换成渲染函数，而**编译器**就是将模板编译成渲染函数的。</p>
