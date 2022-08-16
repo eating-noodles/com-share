@@ -58,6 +58,7 @@ The last comment block of each slide will be treated as slide notes. It will be 
   - 渲染器的作用
   - 编译器的作用
 - 🤹 **实现响应式**
+  - 什么是响应式
   - 基本思路
   - 边界问题
 <br>
@@ -619,3 +620,138 @@ export default {
 <p v-click="2">
 
 在vue中，最后都是需要`渲染器`来渲染UI，而渲染函数是来为`渲染器`生成`虚拟DOM`的。"左边写法"中的模板最后也要转换成渲染函数，而**编译器**就是将模板编译成渲染函数的。</p>
+
+---
+
+# 实现一个`Hello`函数
+
+<div>
+
+实现一个`hello`函数，输入什么参数，返回`hello + 入参`。
+
+例如：
+入参是`zhangsan`，返回：`hello zhangsan`
+
+<div v-click='1'>
+
+``` javascript
+function hello(name) {
+  return "hello " + name
+}
+```
+
+调用如下：
+
+``` javascript
+let name = 'zhangsan';
+
+let result = hello(name);
+```
+
+</div>
+<p v-click="2">
+如果我想每次`name`变化，`result`同时跟着自动变化，要怎么做？
+</p>
+
+<p v-click="3">
+监听name的变化，每当name变化时，去执行hello方法，然后把结果更新给result
+</p>
+
+<p v-click="4">
+
+`name`,`hello`, `result` ===> | some codes |  ===> `result`,`name` change together
+                  
+
+</p>
+
+</div>
+
+---
+
+# 看一个vue组件
+
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+``` javascript
+<template>
+  <div>
+    {{ msg }}
+  </div>
+</template>
+
+<script>
+export default {
+  data () {
+    return {
+      msg: 'Hello World'
+    }
+  },
+  methods: {
+    /*... */
+  },
+}
+</script>
+```
+</div>
+
+<div v-click="1">
+
+``` javascript
+import { h } from 'vue'
+
+export default {
+  data() {
+    return {
+      msg: 'hello world'
+    }
+  },
+  render() {
+    return h('div', this.msg)
+  }
+}
+```
+
+<p v-click="2">
+左右两个组件是等价的。右边这个组件，其实就是定义了一个对象，我们能不能把它定义成一个函数？
+</p>
+
+
+</div>
+</div>
+
+---
+
+# 看一个vue组件
+
+
+<div>
+
+``` javascript
+function component(msg) {
+  return {
+    data() {/*...*/},
+    render() {/*...*/}
+  } }
+```
+从前面讲过的知识点，我们知道vue组件最终会渲染成页面。
+所以总结一下它的使用流程:
+
+<div v-click="1">
+
+
+`msg`... ==> | vueJs处理逻辑 | ==> `msg`, `UI` change together
+
+对比前面我们总结的`hello`函数的流程，其实是一样的。
+</div>
+
+<p v-click="2">
+
+这里需要注意几点：
+- 这种UI随变量变化而变化的模式，就是前端常说的`响应式`。所以其实上，业务上各种页面的呈现逻辑变化也就映射成了变量的变化。
+- 我们平时开发的那些vue组件，可以把它当成一个函数（或者对象）。渲染器最后调用的是这个函数/对象的`render`方法（渲染器的输入是虚拟DOM）来获取vnode。（vue组件的本质就是一组dom的组合）
+- 这里举例只是为了让大家理解组件和响应式，并不严谨。
+
+</p>
+</div>
