@@ -755,3 +755,71 @@ function component(msg) {
 
 </p>
 </div>
+
+---
+
+# 响应式的实现
+
+<div>
+
+通过前面，我们认识了`响应式`, 也谈到了`响应式`实现的基本思路。
+</div>
+
+<div v-click="1">
+总结一下就是：
+监听变量变化，变量变化时，重新执行用到变量的方法。
+</div>
+
+<div v-click="2">
+
+所以实现的思路也很简单
+- 函数执行时，如果函数读取到变量的值，我们就以这个变量为索引，建立一个数组(更好的可以用`Set`)，把这个函数保存起来，把这个函数看成这个变量的一个依赖。
+- 然后监听这个变量，如果这个变量被设置/修改，我们就去循环遍历它的依赖数组，依次执行。这样就实现了一个简单的响应式系统。
+</div>
+
+<div v-click="3">
+
+保存依赖的数据结构应该是这样的：
+
+``` typescript
+const map = new Map<string, Set<Function>>()
+
+const example = [
+  ['var1', [/* Function1, Function2, ...*/]],
+  ['var2', [/* Function1, Function2, ...*/]],
+]
+```
+</div>
+
+---
+
+# 响应式的实现
+
+<div>
+但是实际在`js`中，我们最常用的是对象。设计一个数据结构来保存对象，应该是什么样子的？
+</div>
+
+<div v-click="1">
+这里我们只考虑最简单的对象。（不考虑多层嵌套对象，对于多层嵌套对象递归调用就可以了）
+
+```javascript
+const exampleObj = {
+  name: 'foo',
+  oa: 'bar'
+}
+```
+
+``` typescript
+// 对象的键 和 键的依赖函数的映射
+const keyMap = new Map<string, Set<Function>>()
+
+// 对象和 对象键的映射
+const map = new WeakMap<Object, keyMap>()
+```
+
+</div>
+
+<div v-click="2">
+
+具体实现是依靠的`Proxy`(Vue3); `Object.defineProperty`(Vue2)。具体的就不细说了，感兴趣的可以关注`前端例会分享`。
+</div>
