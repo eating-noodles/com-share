@@ -59,8 +59,8 @@ The last comment block of each slide will be treated as slide notes. It will be 
   - 编译器的作用
 - 🤹 **实现响应式**
   - 什么是响应式
-  - 基本思路
-  - 边界问题
+  - 基本响应式的实现
+  - 问题
 <br>
 <br>
 
@@ -84,7 +84,7 @@ h1 {
 
 ---
 
-# 早些年的前端
+# 1. 早些年的前端
 一个HTML页面的基本组成
 
 <div grid="~ cols-2 gap-4">
@@ -418,7 +418,7 @@ Render(obj, document.body);
 
 --- 
 
-# VueJs
+# 2. VueJs
 
 给大家看一个简单的VueJs文件：
 
@@ -623,7 +623,7 @@ export default {
 
 ---
 
-# 实现一个`Hello`函数
+# 3. 实现一个`Hello`函数
 
 <div>
 
@@ -821,5 +821,18 @@ const map = new WeakMap<Object, keyMap>()
 
 <div v-click="2">
 
-具体实现是依靠的`Proxy`(Vue3); `Object.defineProperty`(Vue2)。具体的就不细说了，感兴趣的可以关注`前端例会分享`。
+具体实现是依靠的`Proxy`(Vue3); `Object.defineProperty`(Vue2)。
+
+具体的就不细说了，感兴趣的可以关注`前端例会分享`。
 </div>
+
+---
+
+# 问题
+
+- 嵌套问题
+- 分支切换问题
+- 时序控制问题
+- watch和computed
+- ...
+
