@@ -836,3 +836,57 @@ const map = new WeakMap<Object, keyMap>()
 - watch和computed
 - ...
 
+
+---
+
+# 响应式的实现
+
+<div>
+<p> 
+
+基本思路：
+</p>
+
+``` 
+拦截对象的读取操作，收集依赖
+
+拦截对象的赋值操作，执行副作用函数
+
+```
+
+</div>
+
+<p v-click="1">
+实现响应式的过程中，会遇到各种边界问题，记住一点
+
+`我们所做的一切逻辑，都是为了保证收集到的依赖是正确`
+
+</p>
+
+---
+
+# 响应式的实现
+
+``` javascript
+export const reactive = (raw) => {
+  const observed = new Proxy(raw, {
+    get(target, key) {
+      const res = Reflect.get(target, key)
+
+      // todo: track deps
+      track(target, key)
+    
+      return res
+    },
+    set(target, key, value) { 
+      const res = Reflect.set(target, key, value)
+      
+      // todo: trigger deps
+      trigger(target, key)
+
+      return res
+    }
+  })
+  return observed
+}
+```
