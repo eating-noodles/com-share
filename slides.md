@@ -947,7 +947,7 @@ export const trigger = (target, key) => {
 
 --- 
 
-# 响应式实现 - 分支切换问题
+# 响应式的实现 - 分支切换问题
 
 ``` javascript
 const obj = reactive({
@@ -984,7 +984,7 @@ obj ---> text ---> [ activeFn ]
 
 --- 
 
-# 响应式实现 - 分支切换问题
+# 响应式的实现 - 分支切换问题
 
 <div grid="~ cols-2 gap-4">
 <div>
@@ -1043,3 +1043,65 @@ export const trigger = (target, key) => {
 ```
 </div>
 </div>
+
+---
+
+# 响应式的实现 - 嵌套问题
+
+```javascript
+  const observed = reactive({ foo: 1, bar: 2 })
+  let temp1, temp2
+
+  // effect1
+  effect(() => {
+    // effect2
+    effect(() => {
+      temp2 = observed.bar
+      console.log('effect 2')
+    })
+    temp1 = observed.foo
+    console.log('effect 1')
+  })
+```
+分析一下，这段代码执行完成以后的依赖情况。
+<p>
+`observed.foo`值改变，会输出什么？
+`observed.bar`值改变，会输出什么？
+</p>
+
+<div v-click="1">
+<p>
+observed ---> foo ---> [ effect2 ]
+</p>
+
+<p>
+observed ---> bar ---> [ effect2 ]
+</p>
+</div>
+
+<div v-click="2">
+我们需要一个类似于栈的东西来保存当前的副作用函数。新的副作用函数来时，入栈保存；需要时再出栈。
+</div>
+
+---
+
+# 响应式的实现 - 嵌套问题
+
+```javascript
+const effectStack = new Array()
+
+export const effect = (fn) => {
+  activeFn = fn
+  // 入栈保存当前副作用函数
+  effectStack.push(fn)
+  fn()
+  // 执行完成 出栈
+  effectStack.pop()
+  // 恢复之前的activeFn
+  if (effectStack.length > 0) {
+    activeFn = effectStack[effectStack.length - 1]
+  } else {
+    activeFn = undefined
+ }
+}
+```
