@@ -890,3 +890,156 @@ export const reactive = (raw) => {
   return observed
 }
 ```
+
+---
+
+#  响应式的实现
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+``` javascript
+const targetMap = new WeakMap()
+const effectStack = new Array()
+let activeFn
+
+export const effect = (fn) => {
+  activeFn = fn
+}
+
+export const track = (target, key) => {
+  let depsMap = targetMap.get(target)
+  if (!depsMap) {
+    depsMap = new Map()
+    targetMap.set(target, depsMap)
+  }
+
+  let depsSet = depsMap.get(key)
+  if (!depsSet) {
+    depsSet = new Set()
+    depsMap.set(key, depsSet)
+  }
+  if (activeFn) {
+    depsSet.add(activeFn)
+  }
+}
+```
+</div>
+
+<div>
+
+``` javascript
+export const trigger = (target, key) => {
+  const depsMap = targetMap.get(target)
+  if (!depsMap) return
+  
+  const deps = depsMap.get(key)
+  if (!deps) return 
+  
+  deps.forEach(dep => {
+    dep()
+  });
+}
+
+```
+</div>
+</div>
+
+--- 
+
+# 响应式实现 - 分支切换问题
+
+``` javascript
+const obj = reactive({
+  flag: true,
+  text: 'yes'
+})
+effect(function() {
+  let a = obj.flag ? obj.text : 'something'
+})
+```
+分析一下 依赖收集的结果
+
+<div v-click="1">
+副作用函数：`activeFn`
+
+<div>
+obj ---> flag ---> [ activeFn ]
+</div>
+
+<div>
+obj ---> text ---> [ activeFn ]
+</div>
+</div>
+
+<p v-click="2">
+这个时候，无论是改变`obj.flag`还是`obj.text`的值，副作用函数都会重新运行。
+</p>
+<p v-click="3">
+如果`obj.flag=false`，`a`的值始终为`something`。但是这个时候`obj.text`值的变化还是会导致副作用函数运行，这是没有必要的。
+</p>
+<p v-click="4">
+解决方案：副作用函数每次运行执行逻辑时，会读取对象的值，会触发依赖重新收集。所以我们在每次`trigger`（执行依赖）的时候，执行完就将执行的副作用函数从数组移除即可。
+</p>
+
+--- 
+
+# 响应式实现 - 分支切换问题
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+```javascript {all|22|all}
+const targetMap = new WeakMap()
+const effectStack = new Array()
+let activeFn
+
+export const effect = (fn) => {
+  activeFn = fn
+}
+export const track = (target, key) => {
+  let depsMap = targetMap.get(target)
+  if (!depsMap) {
+    depsMap = new Map()
+    targetMap.set(target, depsMap)
+  }
+
+  let depsSet = depsMap.get(key)
+  if (!depsSet) {
+    depsSet = new Set()
+    depsMap.set(key, depsSet)
+  }
+  if (activeFn) {
+    depsSet.add(activeFn)
+    activeFn.deps.push(depsSet)
+  }
+}
+```
+</div>
+
+<div>
+
+```javascript {all|8-19|all}
+export const trigger = (target, key) => {
+  const depsMap = targetMap.get(target)
+  if (!depsMap) return
+  
+  const deps = depsMap.get(key)
+  if (!deps) return 
+  
+  // note: 防止无限循环 
+  // 触发依赖时，一边循环依赖Set执行副作用函数，
+  // 执行副作用函数时，又会把副作用函数重新加入到依赖Set中。这样就会导致无限循环
+  const newDeps = new Set<any>(deps)
+  newDeps.forEach(dep => {
+    dep.deps.forEach(el => {
+      el.delete(dep)
+    })
+    dep.deps.length = 0
+
+    dep()
+  });
+}
+```
+</div>
+</div>
