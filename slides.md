@@ -1098,10 +1098,57 @@ export const effect = (fn) => {
   // 执行完成 出栈
   effectStack.pop()
   // 恢复之前的activeFn
-  if (effectStack.length > 0) {
-    activeFn = effectStack[effectStack.length - 1]
-  } else {
-    activeFn = undefined
- }
+  activeFn = effectStack[effectStack.length - 1]
+}
+```
+
+---
+
+# 响应式的实现 - 自增问题
+
+``` javascript
+  const observed = reactive({ foo: 1 })
+  effect(() => {
+    observed.foo++
+  })
+```
+
+代码执行的结果是什么样的？分析工作流程。
+<div v-click="1">
+结果：会无限循环，直到堆栈溢出
+</div>
+<p v-click="2">
+副作用函数中，既收集了依赖，又重新执行了依赖。
+</p>
+<p v-click="3">
+解决方案：执行依赖时做判断，如果要执行的依赖和当前的副作用函数相同，则不做处理。
+</p>
+
+---
+
+# 响应式的实现 - 自增问题
+
+```javascript {all|13,20|all}
+export const trigger = (target, key) => {
+  const depsMap = targetMap.get(target)
+  if (!depsMap) return
+  
+  const deps = depsMap.get(key)
+  if (!deps) return 
+  
+  // note: 防止无限循环 
+  // 触发依赖时，一边循环依赖Set执行副作用函数，
+  // 执行副作用函数时，又会把副作用函数重新加入到依赖Set中。这样就会导致无限循环
+  const newDeps = new Set<any>(deps)
+  newDeps.forEach(dep => {
+    if (dep !== activeFn) {
+      dep.deps.forEach(el => {
+        el.delete(dep)
+      })
+      dep.deps.length = 0
+
+      dep.run()
+    }
+  });
 }
 ```
